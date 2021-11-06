@@ -1,24 +1,25 @@
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import org.apache.commons.cli.CommandLine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import utils.MessageBuildUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class Main {
+import static utils.CommandLineUtils.generateCommandLine;
 
+public class Main {
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
     public static void main(String[] args) throws URISyntaxException, InterruptedException {
-        if (args.length < 1) {
-            throw new IllegalStateException("Argument list should not be empty. Expected instrument to subscribe to.");
-        }
-        Client client = new Client(new URI("wss://ws-feed.exchange.coinbase.com"));
+        CommandLine commandLine = generateCommandLine(args);
+        String[] currencyPairs = commandLine.getOptionValues('c');
+        int rowLimit = Integer.parseInt(commandLine.getOptionValue('l', "10"));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> log.info("Shutting down ...")));
+        Client client = new Client(new URI("wss://ws-feed.exchange.coinbase.com"), List.of(currencyPairs), rowLimit);
         client.connectBlocking(10, TimeUnit.SECONDS);
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT);
-        Gson gson = gsonBuilder.create();
-        String[] channels = new String[]{"level2"};
-        SubscribeMsg subscribeMsg = new SubscribeMsg(args, channels);
-        String jsonString = gson.toJson(subscribeMsg);
+        String jsonString = MessageBuildUtils.createSubscribeMessage(List.of(currencyPairs), List.of("level2"));
         client.send(jsonString);
     }
 }

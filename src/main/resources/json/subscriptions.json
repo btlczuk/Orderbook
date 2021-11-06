@@ -1,0 +1,11 @@
+{
+  "type": "subscriptions",
+  "channels": [
+    {
+      "name": "level2",
+      "product_ids": [
+        "BTC-USD"
+      ]
+    }
+  ]
+}
